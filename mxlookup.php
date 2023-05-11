@@ -42,6 +42,20 @@ class mxlookup extends rcube_plugin
             $this->rc->config->set('mxlookup_host', $mx_record['target']);
         }
 
+        // Perform the A record lookup for the imap_host
+        $imap_host = $this->rc->config->get('mxlookup_host');
+        $imap_host_ip = gethostbyname($imap_host);
+
+        // Read the whitelist file and extract the IP addresses into an array
+        $whitelist_file = __DIR__ . '/whitelist.txt';
+        $whitelisted_ips = file($whitelist_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        // Check if the resolved IP address is in the whitelist
+        if (!in_array($imap_host_ip, $whitelisted_ips)) {
+            // Prevent login by aborting the authentication process
+            $args['abort'] = true;
+        }
+
         // Set the IMAP host value to the mxlookup_host configuration value
         $args['host'] = $this->rc->config->get('mxlookup_host');
 
