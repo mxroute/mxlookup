@@ -17,7 +17,7 @@ The mxlookup plugin for Roundcube performs a lookup of the login user's MX recor
 
 1. Clone the mxlookup plugin repository into your Roundcube plugins directory:
 
-    `git clone https://github.com/your-username/mxlookup.git plugins/mxlookup`
+    `git clone https://github.com/mxroute/mxlookup`
     
 2. Add "mxlookup" to the plugins array in your Roundcube config/config.inc.php file:
 
