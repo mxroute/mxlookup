@@ -29,10 +29,7 @@ The mxlookup plugin for Roundcube performs a lookup of the login user's MX recor
 
 This ensures that the user does not see a "server" box on the login form.
 
-4. Create a whitelist.txt file in the plugins/mxlookup directory. This file should contain a list of approved IP addresses (one per line) that are allowed to be used as imap_host values. This whitelist prevents the plugin from being utilized by users on unauthorized servers. Example whitelist.txt file:
-
-    `192.168.0.10`
-    `10.0.0.5`
+4. Create a whitelist.txt file in the plugins/mxlookup directory. This file should contain a list of approved IP addresses (one per line) that are allowed to be used as imap_host values. This whitelist prevents the plugin from being utilized by users on unauthorized servers.
 
 ## Customization
 
