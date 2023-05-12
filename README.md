@@ -1,15 +1,48 @@
-# mxlookup
-Plugin for Roundcube that performs a lookup of the login user's MX records and dynamically chooses their imap_host from it.
+# mxlookup Plugin for Roundcube
 
-The plugin was originally developed for MXroute, and there's one part in mxlookup.php that you can find specific to us:
+The mxlookup plugin for Roundcube performs a lookup of the login user's MX records and dynamically chooses the `imap_host` based on the retrieved MX records. This allows for flexible configuration of the IMAP host based on the user's domain.
 
-            // Filter out any MX records containing the word "relay"
-            $mx_records = array_filter($mx_records, function ($record) {
-                return strpos($record['target'], 'relay') === false;
-            });
-            
-Because what we wanted here was to pull the MX records for the login user's entered domain and subtract any records containing the string "relay" in them. At the least, this probably won't get in your way. At most, you might want to change it or remove it.
+## Features
 
-To install this plugin, clone the repo to your Roundcube plugin directory, add "mxlookup" to the array of enabled plugins in your config.inc.php, and in your config.inc.php you should set imap_host to a default value (Even just literally "default" is fine). You need to set imap_host to something or the user will see a "server" box on the login form that will interrupt your login flow.
+- Retrieves the MX records for the user's domain
+- Filters out MX records containing the word "relay"
+- Selects the lowest priority MX record as the `imap_host` value
+- Validates the `imap_host` IP address against a whitelist
 
-The whitelist.txt file should contain a list of IP addresses (one per line) of servers that are approved for users to login to. This is to prevent the plugin from being utilized by customers of servers run by someone other than you.
+## Requirements
+
+- Roundcube webmail version X.X.X or higher
+
+## Installation
+
+1. Clone the mxlookup plugin repository into your Roundcube plugins directory:
+
+    git clone https://github.com/your-username/mxlookup.git plugins/mxlookup
+    
+2. Add "mxlookup" to the plugins array in your Roundcube config/config.inc.php file:
+
+    $config['plugins'] = array('mxlookup');
+
+3. In the same config/config.inc.php file, set the imap_host configuration option to a default value. For example:
+
+    $config['imap_host'] = 'default';
+
+This ensures that the user does not see a "server" box on the login form.
+
+4. Create a whitelist.txt file in the plugins/mxlookup directory. This file should contain a list of approved IP addresses (one per line) that are allowed to be used as imap_host values. This whitelist prevents the plugin from being utilized by users on unauthorized servers. Example whitelist.txt file:
+
+    192.168.0.10
+    10.0.0.5
+
+## Customization
+
+- Filtering MX Records
+
+The original mxlookup plugin was developed for MXroute. If you need to modify the filtering of MX records, you can adjust the following code snippet in plugins/mxlookup/mxlookup.php:
+
+    // Filter out any MX records containing the word "relay"
+    $mx_records = array_filter($mx_records, function ($record) {
+        return strpos($record['target'], 'relay') === false;
+    });
+
+You can modify or remove this code snippet based on your specific requirements.
