@@ -25,21 +25,24 @@ class mxlookup extends rcube_plugin
             // Get the MX records for the domain
             $mx_records = dns_get_record($domain, DNS_MX);
 
-            // Filter out any MX records containing the word "relay"
-            $mx_records = array_filter($mx_records, function ($record) {
-                return strpos($record['target'], 'relay') === false;
-            });
+            // Check if MX records are retrieved
+            if (is_array($mx_records)) {
+                // Filter out any MX records containing the word "relay"
+                $mx_records = array_filter($mx_records, function ($record) {
+                    return strpos($record['target'], 'relay') === false;
+                });
 
-            // Sort the remaining MX records by priority (lower is better)
-            usort($mx_records, function ($a, $b) {
-                return $a['pri'] - $b['pri'];
-            });
+                // Sort the remaining MX records by priority (lower is better)
+                usort($mx_records, function ($a, $b) {
+                    return $a['pri'] - $b['pri'];
+                });
 
-            // Get the first (i.e. lowest priority) MX record
-            $mx_record = reset($mx_records);
+                // Get the first (i.e., lowest priority) MX record
+                $mx_record = reset($mx_records);
 
-            // Set the mxlookup_host configuration value to the target of the selected MX record
-            $this->rc->config->set('mxlookup_host', $mx_record['target']);
+                // Set the mxlookup_host configuration value to the target of the selected MX record
+                $this->rc->config->set('mxlookup_host', $mx_record['target']);
+            }
         }
 
         // Perform the A record lookup for the imap_host
