@@ -11,7 +11,7 @@ The mxlookup plugin for Roundcube performs a lookup of the login user's MX recor
 
 ## Requirements
 
-- Roundcube webmail version X.X.X or higher
+- Tested on Roundcube version 1.6.1
 
 ## Installation
 
