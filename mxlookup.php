@@ -6,7 +6,6 @@ class mxlookup extends rcube_plugin
 
     public function init()
     {
-        // Define the default configuration values for the plugin
         $this->rc = rcube::get_instance();
         $this->add_hook('authenticate', array($this, 'modify_imap_host'));
         $this->rc->config->set('mxlookup_host', '');
@@ -14,56 +13,85 @@ class mxlookup extends rcube_plugin
 
     public function modify_imap_host($args)
     {
-        // Check if the mxlookup_host configuration value is empty
         if (empty($this->rc->config->get('mxlookup_host'))) {
-            // Get the user's login name from the login form
             $login = $args['user'];
 
-            // Split the login name into username and domain parts
+            // Validate email format
+            if (!filter_var($login, FILTER_VALIDATE_EMAIL)) {
+                $args['abort'] = true;
+                return $args;
+            }
+
             list($user, $domain) = explode('@', $login);
 
-            // Get the MX records for the domain
-            $mx_records = dns_get_record($domain, DNS_MX);
+            // Validate domain
+            if (!$this->is_valid_domain($domain)) {
+                $args['abort'] = true;
+                return $args;
+            }
 
-            // Check if MX records are retrieved
+            $mx_records = @dns_get_record($domain, DNS_MX);
+
             if (is_array($mx_records)) {
-                // Filter out any MX records containing the word "relay"
                 $mx_records = array_filter($mx_records, function ($record) {
-                    return strpos($record['target'], 'relay') === false;
+                    return strpos(strtolower($record['target']), 'relay') === false;
                 });
 
-                // Sort the remaining MX records by priority (lower is better)
                 usort($mx_records, function ($a, $b) {
                     return $a['pri'] - $b['pri'];
                 });
 
-                // Get the first (i.e., lowest priority) MX record
                 $mx_record = reset($mx_records);
 
-                // Set the mxlookup_host configuration value to the target of the selected MX record
-                $this->rc->config->set('mxlookup_host', $mx_record['target']);
+                if ($mx_record && isset($mx_record['target'])) {
+                    $this->rc->config->set('mxlookup_host', $mx_record['target']);
+                }
             }
         }
 
-        // Perform the A record lookup for the imap_host
         $imap_host = $this->rc->config->get('mxlookup_host');
-        $imap_host_ip = gethostbyname($imap_host);
-
-        // Read the whitelist file and extract the IP addresses into an array
-        $whitelist_file = __DIR__ . '/whitelist.txt';
-        $whitelisted_ips = file($whitelist_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-        // Check if the resolved IP address is in the whitelist
-        if (!in_array($imap_host_ip, $whitelisted_ips)) {
-            // Prevent login by aborting the authentication process
+        
+        // Validate IMAP host
+        if (!$this->is_valid_domain($imap_host)) {
             $args['abort'] = true;
+            return $args;
         }
 
-        // Set the IMAP host value to the mxlookup_host configuration value
-        $args['host'] = $this->rc->config->get('mxlookup_host');
+        $imap_host_ip = gethostbyname($imap_host);
+
+        // Validate IP address
+        if (!filter_var($imap_host_ip, FILTER_VALIDATE_IP)) {
+            $args['abort'] = true;
+            return $args;
+        }
+
+        $whitelist_file = __DIR__ . '/whitelist.txt';
+        $whitelisted_ips = $this->load_whitelist($whitelist_file);
+
+        if (!in_array($imap_host_ip, $whitelisted_ips)) {
+            $args['abort'] = true;
+        } else {
+            $args['host'] = $imap_host;
+        }
 
         return $args;
     }
-}
 
-?>
+    private function is_valid_domain($domain)
+    {
+        return (preg_match("/^([a-z\d](-*[a-z\d])*)(\.([a-z\d](-*[a-z\d])*))*$/i", $domain) //valid chars check
+                && preg_match("/^.{1,253}$/", $domain) //overall length check
+                && preg_match("/^[^\.]{1,63}(\.[^\.]{1,63})*$/", $domain)); //length of each label
+    }
+
+    private function load_whitelist($file)
+    {
+        if (!file_exists($file) || !is_readable($file)) {
+            return array();
+        }
+        $ips = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        return array_filter($ips, function($ip) {
+            return filter_var($ip, FILTER_VALIDATE_IP);
+        });
+    }
+}
