@@ -69,11 +69,18 @@ class mxlookup extends rcube_plugin
         $whitelisted_ips = $this->load_whitelist($whitelist_file);
 
         if (!in_array($imap_host_ip, $whitelisted_ips)) {
-            $args['abort'] = true;
-        } else {
-            $args['host'] = $imap_host;
+            // Check for mxwebmail TXT record
+            $txt_host = $this->check_mxwebmail_txt($domain, $whitelisted_ips);
+            if ($txt_host) {
+                $imap_host = $txt_host;
+                $imap_host_ip = gethostbyname($imap_host);
+            } else {
+                $args['abort'] = true;
+                return $args;
+            }
         }
 
+        $args['host'] = $imap_host;
         return $args;
     }
 
@@ -93,5 +100,46 @@ class mxlookup extends rcube_plugin
         return array_filter($ips, function($ip) {
             return filter_var($ip, FILTER_VALIDATE_IP);
         });
+    }
+
+    private function check_mxwebmail_txt($domain, $whitelisted_ips)
+    {
+        $txt_records = @dns_get_record("mxwebmail.".$domain, DNS_TXT);
+        if (!is_array($txt_records) || empty($txt_records)) {
+            return false;
+        }
+
+        $txt_host = isset($txt_records[0]['txt']) ? $txt_records[0]['txt'] : '';
+        
+        // Remove surrounding quotes if present
+        $txt_host = trim($txt_host, '"');
+
+        // Strictly sanitize the input
+        $txt_host = preg_replace('/[^a-zA-Z0-9.-]/', '', $txt_host);
+
+        // Validate the hostname
+        if (!$this->is_valid_domain($txt_host)) {
+            return false;
+        }
+
+        // Ensure the hostname is not an IP address
+        if (filter_var($txt_host, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+
+        // Resolve the hostname to an IP
+        $txt_host_ip = gethostbyname($txt_host);
+
+        // Ensure resolution was successful
+        if ($txt_host_ip === $txt_host) {
+            return false;
+        }
+
+        // Check if the IP is in the whitelist
+        if (in_array($txt_host_ip, $whitelisted_ips)) {
+            return $txt_host;
+        }
+
+        return false;
     }
 }
