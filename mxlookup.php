@@ -109,17 +109,31 @@ class mxlookup extends rcube_plugin
             return false;
         }
 
-        $txt_host = trim($txt_records[0]['txt']);
+        $txt_host = isset($txt_records[0]['txt']) ? $txt_records[0]['txt'] : '';
+        
         // Remove surrounding quotes if present
         $txt_host = trim($txt_host, '"');
+
+        // Strictly sanitize the input
+        $txt_host = preg_replace('/[^a-zA-Z0-9.-]/', '', $txt_host);
 
         // Validate the hostname
         if (!$this->is_valid_domain($txt_host)) {
             return false;
         }
 
+        // Ensure the hostname is not an IP address
+        if (filter_var($txt_host, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+
         // Resolve the hostname to an IP
         $txt_host_ip = gethostbyname($txt_host);
+
+        // Ensure resolution was successful
+        if ($txt_host_ip === $txt_host) {
+            return false;
+        }
 
         // Check if the IP is in the whitelist
         if (in_array($txt_host_ip, $whitelisted_ips)) {
