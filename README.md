@@ -8,10 +8,11 @@ The mxlookup plugin for Roundcube performs a lookup of the login user's MX recor
 - Filters out MX records containing the word "relay"
 - Selects the lowest priority MX record as the `imap_host` value
 - Validates the `imap_host` IP address against a whitelist
+- If the user's MX records don't point directly to MXroute, they can create a TXT record named "mxwebmail" with the contents being the hostname for one of our servers (example: "arrow.mxrouting.net"). The plugin will pick up that TXT record if it fails on the MX checks.
 
 ## Requirements
 
-- Tested on Roundcube versions 1.6.4 - 1.6.6
+- Tested on Roundcube version 1.6.7
 
 ## Installation
 
