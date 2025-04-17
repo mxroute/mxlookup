@@ -73,7 +73,6 @@ class mxlookup extends rcube_plugin
             $txt_host = $this->check_mxwebmail_txt($domain, $whitelisted_ips);
             if ($txt_host) {
                 $imap_host = $txt_host;
-                $imap_host_ip = gethostbyname($imap_host);
             } else {
                 $args['abort'] = true;
                 return $args;
